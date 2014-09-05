@@ -1,4 +1,9 @@
 include README.md
 include LICENSE.txt
 include tests/test-wallet.py
-include optional/
+include tests/test-address.py
+include tests/test-blockchain.py
+include tests/test-ecc.py
+include tests/test-piecewise.py
+include tests/test-script.py
+
