@@ -1,0 +1,185 @@
+#!/usr/bin/env python
+
+import os
+
+import sys
+sys.path.append(os.path.join(os.path.split(__file__)[0], '..'))
+
+import argparse
+import json
+import getpass
+
+import pycoind
+
+VersionString = ".".join(str(i) for i in pycoind.VERSION)
+
+Epilog = '''* Most terminals use a scrollback buffer, which can leave
+            contents (such as private keys and passphrases) visible long
+            after using this utility. Make sure you clear your scrollback
+            and use the secure passphrase and key input when possible, by
+            omitting the passphrase or key from the command line.'''
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description = "Address Manipulation Tool", epilog = Epilog, add_help = False)
+
+    group = parser.add_argument_group(title = "Address Options")
+    group.add_argument('--coin', metavar = "COINNAME", default = 'bitcoin', help = "specify coin (default: bitcoin)")
+    only_one = group.add_mutually_exclusive_group()
+    only_one.add_argument('--generate', action = 'store_true', help = "generate a new address")
+    only_one.add_argument('--key', nargs = '?', metavar = "KEY", action = "append", help = "hex public key or wif private key *")
+
+    group = parser.add_argument_group(title = "Compression")
+    only_one = group.add_mutually_exclusive_group()
+    only_one.add_argument('--compress', default = False, action = "store_true", help = "compress the key")
+    only_one.add_argument('--decompress', default = False, action = "store_true", help = "decompress the key")
+
+    group = parser.add_argument_group(title = "Encryption")
+    group.add_argument('--decrypt', nargs = '?', metavar = "PASSWORD", action = "append", help = "use passsphrase to decrypt key *")
+    group.add_argument('--encrypt', nargs = '?', metavar = "PASSWORD", action = "append", help = "use passphrase to encrypt key *")
+
+    group = parser.add_argument_group(title = "Printed Addresses")
+    group.add_argument('--intermediate', nargs = '?', metavar = "PASSWORD", action = "append", help = "generate an intermediate code for a passphrase *")
+    group.add_argument('--lot', help = "set printed address lot number")
+    group.add_argument('--sequence', help = "set printed address sequence number")
+    group.add_argument('--generate-printed', metavar = "INTERMEDIATE_CODE", help = "generate a printed address")
+    group.add_argument('--confirm', metavar = "CONFIRM_CODE [PASSWORD]", help = "confirm a printed address *")
+    group.add_argument('passphrase', nargs = "?", action = "append", help = argparse.SUPPRESS)
+
+    group = parser.add_argument_group(title = "Output")
+    group.add_argument('-h', '--help', action = "help", help = "show this help message and exit")
+    group.add_argument('-v', '--version', action='version', version='%(prog)s ' + VersionString)
+    group.add_argument('--show-private', default = False, action = "store_true", help = "show unencrypted private keys *")
+    group.add_argument('--json', action = "store_true", help = "output in JSON")
+
+    args = parser.parse_args()
+
+    # secure input from the user, if the key is present
+    def get_password(k, prompt = "Passphrase"):
+        secure = False
+        password = getattr(args, k)
+        if password is not None:
+            password = password[0]
+            if password is None:
+                password = getpass.getpass(prompt + ':')
+                secure = True
+        return (secure, password)
+
+    # dump the results in a human readable or json format
+    def dump_results(info):
+        if args.json:
+            print json.dumps(dict((k.lower(), v) for (k, v) in info))
+        else:
+            w = max(len(k) for (k, v) in info)
+            for (k, v) in info:
+                pad = ' ' * (w - len(k))
+                print "%s:%s %s" % (k, pad, v)
+
+    address = None
+
+    # get a key to work on
+    (key_secure, key) = get_password('key', 'Key')
+    if key:
+        if pycoind.wallet.get_address(key) is None:
+            key = None
+
+    # generate a new key
+    elif args.generate:
+        key = pycoind.wallet.Address.generate().private_key
+
+    # generate a new printed address
+    elif args.generate_printed:
+        address = pycoind.wallet.PrintedAddress.generate(args.generate_printed)
+
+    # generate an intermediate code
+    elif args.intermediate:
+        (passphrase_secure, passphrase) = get_password('intermediate')
+        (lot, sequence) = (None, None)
+        if args.lot and args.sequence:
+            lot = int(args.lot)
+            sequence = int(args.sequence)
+        info = [
+            ("Intermediate Code", pycoind.wallet.PrintedAddress.generate_intermediate_code(passphrase, lot, sequence)),
+        ]
+        dump_results(info)
+        exit()
+
+    # confirm a printed address' confirmation code
+    elif args.confirm:
+        (passphrase_secure, passphrase) = get_password('passphrase')
+        confirm = pycoind.wallet.PrintedAddress.confirm(args.confirm, passphrase)
+        info = [
+            ('Address', confirm.address),
+            ('Public Key', confirm.public_key.encode('hex')),
+            ('Compressed', confirm.compressed),
+            ('Lot', confirm.lot),
+            ('Sequence', confirm.sequence),
+        ]
+        dump_results(info)
+        exit()
+
+    else:
+        parser.print_help()
+        exit(1)
+
+    # no address, but we have a key
+    if address is None:
+        if key is None:
+            key_show = key
+            if key_secure and not args.show_private: key_show = '**redacted**'
+            print "Unsupported address: %s" % key_show
+            exit()
+
+        address = pycoind.wallet.get_address(key)
+
+    # the key can be decrypted, check for a decryption passphrase
+    if hasattr(address, 'decrypt'):
+        (decrypt_secure, decrypt_password) = get_password('decrypt')
+        if decrypt_password:
+            address = address.decrypt(decrypt_password)
+
+    # compress
+    if args.compress:
+        address = address.compress()
+
+    # decompress
+    if args.decompress:
+        address = address.decompress()
+
+    # check for an encryption passphrase
+    (encrypt_secure, encrypt_password) = get_password('encrypt')
+    if encrypt_password:
+        if hasattr(address, 'encrypt'):
+            address = address.encrypt(encrypt_password)
+        else:
+            print "Cannot encrypt password"
+            exit()
+
+    # prepare all the address' info for printing
+    info = []
+    if hasattr(address, 'address'):
+        info.append(("Address", address.address))
+
+    if hasattr(address, 'public_key'):
+        info.append(("Public Key", address.public_key.encode('hex')))
+
+    if hasattr(address, 'compressed'):
+        info.append(("Compressed", address.compressed))
+
+    if hasattr(address, 'lot') and address.lot:
+        info.append(("Lot", address.lot))
+
+    if hasattr(address, 'sequence') and address.sequence:
+        info.append(("Sequence", address.sequence))
+
+    if hasattr(address, 'confirmation_code'):
+        info.append(("Confirmation Code", address.confirmation_code))
+
+    if hasattr(address, 'private_key'):
+        key_show = address.private_key
+        if hasattr(address, 'encrypt') and not args.show_private:
+            key_show = '** redacted **'
+        info.append(("Private Key", key_show))
+
+    # print
+    dump_results(info)

@@ -1,0 +1,231 @@
+#!/usr/bin/env python
+
+import os
+
+import sys
+sys.path.append(os.path.join(os.path.split(__file__)[0], '..'))
+
+import argparse
+import json
+
+import pycoind
+
+VersionString = ".".join(str(i) for i in pycoind.VERSION)
+
+Epilog = '''* Most terminals use a scrollback buffer, which can leave contents
+(such as private keys and passphrases) visible long after using this utility.
+Make sure you clear your scrollback and use the secure passphrase and key
+input when possible, by omitting the passphrase or key from the command line.'''
+
+PrimerDescription = '''Primer Files are similar to the bootstrap.dat files
+used by the original bitcoind client. A primer file contains contiguous blocks
+that can be imported to prime a blockchain database much faster than syncing
+across the network. If multiple files are used, the earliest primer file block
+must include the latest block header already present in the database.'''
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description = "Blockchain Management Tool", add_help = False)
+    #parser = argparse.ArgumentParser(description = "Blockchain Management Tool", epilog = Epilog, add_help = False)
+
+    group = parser.add_argument_group(title = "Blockchain Options")
+    group.add_argument('--coin', metavar = "COINNAME", default = 'bitcoin', help = "specify coin (default: bitcoin)")
+    group.add_argument('--data-dir', metavar = "DIRECTORY", help = "database directory (default: ~/.pycoind/data)")
+    group.add_argument('--no-init', action = "store_true", default = False, help = "do not create data-dir if missing")
+
+    group = parser.add_argument_group(title = "Block Explorer")
+    only_one = group.add_mutually_exclusive_group()
+    only_one.add_argument('--block', metavar = "BLOCK_HASH", help = "dump a block by its block hash")
+    only_one.add_argument('--height', type = int, help = "dump a block by its height")
+    only_one.add_argument('--txid', help = "dump a transaction by its txid")
+    only_one = group.add_mutually_exclusive_group()
+    only_one.add_argument('--big-endian', action = "store_true", help = "display values as big-endian")
+    only_one.add_argument('--little-endian', action = "store_true", help = "display values as little-endian")
+    group.add_argument('--txns', action = "store_true", help = "include transactions for blocks")
+    group.add_argument('--inputs', action = "store_true", help = "include inputs for transactions")
+    group.add_argument('--outputs', action = "store_true", help = "include outputs transactions")
+    group.add_argument('--strict', action = "store_true", help = "search using only the display endianess")
+
+    # @TODO: Primer files
+    #group = parser.add_argument_group(title = "Primer Files", description = PrimerDescription)
+    #only_one = group.add_mutually_exclusive_group()
+    #only_one.add_argument('--import', nargs = "+", metavar = "PRIMER_FILE", help = "import blockchain primer file(s)")
+    #only_one.add_argument('--export', nargs = 2, metavar = ("START_HEIGHT", "COUNT"), help = "export blockchain range as primer files")
+    #only_one.add_argument('--export-all', metavar = "MAX_FILE_SIZE_MB", help = "export entire blockchain as primer files, each with a maximum file size in MB (default: 1750)")
+    #group.add_argument('--skip-verify', action = "store_true", help = "skip signature verification (NOT recommended)")
+    #group.add_argument('--verify-import', metavar = "PUBLIC_KEY", help = "key to verify signature (default: pycoind dev team's)")
+    #group.add_argument('--sign-export', nargs = "?", metavar = "PRIVATE_KEY [PASSWORD]", help = "key to sign exported files; leave blank for secure input (default: do not sign) *")
+    #group.add_argument('passphrase', nargs = "?", action = "append", help = argparse.SUPPRESS)
+    #group.add_argument('--export-dir', metavar = "DIRECTORY", help = "directory to store exported files (default: data-dir)")
+
+    group = parser.add_argument_group(title = "Output")
+    group.add_argument('-h', '--help', action = "help", help = "show this help message and exit")
+    group.add_argument('-v', '--version', action='version', version='%(prog)s ' + VersionString)
+    group.add_argument('--json', action = "store_true", help = "output in JSON")
+
+    # @TODO
+    #group.add_argument('--hex', action = "store_true", help = "output hex encoded data")
+    #group.add_argument('--binary', action = "store_true", help = "output binary data")
+
+    args = parser.parse_args()
+
+
+    # get the data directory, and create it if doesn't exist
+    data_dir = args.data_dir
+    if data_dir is None:
+        data_dir = pycoind.util.default_data_directory()
+
+    if not os.path.isdir(data_dir):
+        if args.no_init:
+            parser.error("Directory does not exist: %s" % data_dir)
+
+        os.makedirs(data_dir)
+
+    def search_hashes(hash):
+        hash = hash.decode('hex')
+        if args.strict:
+            if args.little_endian:
+                return [hash]
+            return [hash[::-1]]
+        return [hash, hash[::-1]]
+
+    def show_hash(hash):
+        if args.little_endian:
+            return hash.encode('hex')
+        return hash[::-1].encode('hex')
+
+    def dump_info(info, indent = ''):
+        if args.json:
+            print json.dumps(dict((k.replace(' ', '_'), v) for (k, v) in info))
+        else:
+            max_k = max(len(k) for (k, v) in info)
+            for (k, v) in info:
+                if isinstance(v, list):
+                    print k.title() + ':'
+                    for i in v:
+                        print "%s    %s" % (indent, i)
+                else:
+                    padding = " " *(max_k - len(k) + 1)
+                    print "%s%s:%s%s" % (indent, k.title(), padding, v)
+
+    if args.block or args.height is not None:
+        blockchain = pycoind.BlockChain(data_dir = data_dir)
+
+        if args.block:
+            blocks = [blockchain.get_block(h) for h in search_hashes(args.block)]
+        elif args.height is not None:
+            try:
+                blocks = [blockchain[args.height]]
+            except IndexError:
+                blocks = []
+
+        for block in blocks:
+            if block is None: continue
+
+            next_block = block.next_block
+            next_hash = None
+            if next_block:
+                next_hash = show_hash(next_block.hash)
+
+            info = [
+                ('height', block.height),
+                ('hash', show_hash(block.hash)),
+                ('previous hash', show_hash(block.previous_hash)),
+                ('merkle root', show_hash(block.merkle_root)),
+                ('next hash', next_hash),
+                ('timestamp', block.timestamp),
+                ('version', block.version),
+                ('bits', block.bits),
+                ('difficulty', pycoind.util.get_difficulty(block.bits)),
+                ('nonce', block.nonce),
+                ('txn count', block.txn_count),
+            ]
+
+            if args.txns and block.txn_count != 0:
+                info.append(('transactions', [show_hash(t.hash) for t in block.transactions]))
+
+            dump_info(info)
+
+
+    elif args.txid:
+        blockchain = pycoind.BlockChain(data_dir = data_dir)
+
+        txns = [blockchain.get_transaction(h) for h in search_hashes(args.txid)]
+        for txn in txns:
+            if txn is None: continue
+
+            block = blockchain.get_transaction_block(txn)
+
+            info = [
+                ('txid', show_hash(txn.hash)),
+                ('block', show_hash(block.hash)),
+                ('index', txn.index),
+                ('version', txn.version),
+                ('lock time', txn.lock_time),
+                ('input count', len(txn.inputs)),
+                ('output count', len(txn.outputs)),
+            ]
+
+            if args.json:
+                if args.inputs:
+                    inputs = []
+                    for input in txn.inputs:
+                        inputs.append(dict(
+                            previous_output = dict(
+                                hash = show_hash(input.previous_output.hash),
+                                index = input.previous_output.index,
+                            ),
+                            signature_script = input.signature_script.encode('hex'),
+                            sequence = input.sequence,
+                        ))
+                    info.append(('inputs', inputs))
+
+                if args.outputs:
+                    outputs = []
+                    for output in txn.outputs:
+                        outputs.append(dict(
+                            value = output.value,
+                            pk_script = output.pk_script.encode('hex')
+                        ))
+                    info.append(('outputs', outputs))
+
+                dump_info(info)
+
+            else:
+                dump_info(info)
+
+                if args.inputs:
+                    print "Inputs:"
+                    for index in xrange(0, len(txn.inputs)):
+                        print "    Input #%d" % index
+
+                        input = txn.inputs[index]
+                        po = '%s:%d' % (show_hash(input.previous_output.hash), input.previous_output.index)
+
+                        info = [
+                            ('previous output hash', show_hash(input.previous_output.hash)),
+                            ('previous output index', input.previous_output.index),
+                            ('signature script (hex)', input.signature_script.encode('hex')),
+                            ('signature script', str(pycoind.Tokenizer(input.signature_script))),
+                            ('sequence', input.sequence),
+                        ]
+                        dump_info(info, '    ')
+                        print
+
+                if args.outputs:
+                    print "Outputs:"
+                    for index in xrange(0, len(txn.outputs)):
+                        print "    Output #%d" % index
+
+                        output = txn.outputs[index]
+
+                        info = [
+                            ('value', output.value),
+                            ('public key script (hex)', output.pk_script.encode('hex')),
+                            ('public key script', str(pycoind.Tokenizer(output.pk_script))),
+                        ]
+                        dump_info(info, '    ')
+                        print
+
+    #elif args.export or args.export_all:
+    #    blockchain = pycoind.BlockChain(data_dir = data_dir)
+
