@@ -75,21 +75,28 @@ if __name__ == '__main__':
                 pad = ' ' * (w - len(k))
                 print "%s:%s %s" % (k, pad, v)
 
+    # get the coin by either name (eg. bitcoin) or symbol (eg. btc)
+    coin = pycoind.coins.get_coin(name = args.coin)
+    if coin is None:
+        coin = pycoind.coins.get_coin(symbol = args.coin)
+    if coin is None:
+        parser.error("Unknown coin - %r" % args.coin)
+
     address = None
 
     # get a key to work on
     (key_secure, key) = get_password('key', 'Key')
     if key:
-        if pycoind.wallet.get_address(key) is None:
+        if pycoind.wallet.get_address(key, coin = coin) is None:
             key = None
 
     # generate a new key
     elif args.generate:
-        key = pycoind.wallet.Address.generate().private_key
+        key = pycoind.wallet.Address.generate(coin = coin).private_key
 
     # generate a new printed address
     elif args.generate_printed:
-        address = pycoind.wallet.PrintedAddress.generate(args.generate_printed)
+        address = pycoind.wallet.PrintedAddress.generate(args.generate_printed, coin = coin)
 
     # generate an intermediate code
     elif args.intermediate:
@@ -107,7 +114,7 @@ if __name__ == '__main__':
     # confirm a printed address' confirmation code
     elif args.confirm:
         (passphrase_secure, passphrase) = get_password('passphrase')
-        confirm = pycoind.wallet.PrintedAddress.confirm(args.confirm, passphrase)
+        confirm = pycoind.wallet.PrintedAddress.confirm(args.confirm, passphrase, coin = coin)
         info = [
             ('Address', confirm.address),
             ('Public Key', confirm.public_key.encode('hex')),
@@ -130,7 +137,7 @@ if __name__ == '__main__':
             print "Unsupported address: %s" % key_show
             exit()
 
-        address = pycoind.wallet.get_address(key)
+        address = pycoind.wallet.get_address(key, coin = coin)
 
     # the key can be decrypted, check for a decryption passphrase
     if hasattr(address, 'decrypt'):
