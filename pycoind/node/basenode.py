@@ -51,7 +51,7 @@ class AddressInUseException(Exception): pass
 
 class StopNode(Exception): pass
 
-VERSION = [0, 0, 1]
+VERSION = [0, 0, 2]
 
 class BaseNode(asyncore.dispatcher, object):
 
