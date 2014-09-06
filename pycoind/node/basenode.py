@@ -183,7 +183,7 @@ class BaseNode(asyncore.dispatcher, object):
         else:
             source = 'node'
         message = '(%s) %s' % (source, message)
-        print >>self._log, message
+        print >>self._log, message[:100]
 
     # Relaying
     # @TODO: not implemented yet and won't be made available until
@@ -451,10 +451,16 @@ class BaseNode(asyncore.dispatcher, object):
 
     def add_any_peer(self):
 
-        peers = self.peers
+        # if we don't have any addresses (and randomly, just sometimes) use a dns seed
+        if not self._addresses or random.randint(0, 5) == 1:
+            # use the DNS seeds to find some peers
+            if self._bootstrap:
+                self.add_peer(self._bootstrap.pop(), False)
 
-        # we have some addresses, add one
-        if self._addresses:
+        else:
+            peers = self.peers
+
+            # we have some addresses, add one
             active_addresses = [n.address for n in peers]
             for address in self._addresses:
 
@@ -464,9 +470,6 @@ class BaseNode(asyncore.dispatcher, object):
                 self.add_peer(address)
                 break
 
-        # use the DNS seeds to find some peers
-        elif self._bootstrap:
-            self.add_peer(self._bootstrap.pop(), False)
 
 
     def heartbeat(self):
