@@ -55,6 +55,8 @@ def _debug(obj, params):
                 text = '%s:%s' % (obj_type, v.hash.encode('hex'))
             elif isinstance(v, format.Txn):
                 text = v.hash.encode('hex')
+            elif isinstance(v, format.BlockHeader):
+                text = v.hash.encode('hex')
             else:
                 text = str(v)
             message.append(('%s=%s' % (k, text)))
