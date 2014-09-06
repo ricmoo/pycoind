@@ -191,7 +191,7 @@ class Database(database.Database):
         block_hash = util.sha256d(binary_header)
 
         # Already exists and nothing new
-        existing = self.get(block_hash)
+        existing = self.get(block_hash, orphans = True)
         if existing:
             return False
             #return existing
