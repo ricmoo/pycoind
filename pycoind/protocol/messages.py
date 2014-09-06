@@ -50,7 +50,7 @@ def _debug(obj, params):
                 text = '%s:%d' % (v.address, v.port)
             elif isinstance(v, format.InventoryVector):
                 obj_type = 'unknown'
-                if v.object_type < 2:
+                if v.object_type <= 2:
                     obj_type = ['error', 'tx', 'block'][v.object_type]
                 text = '%s:%s' % (obj_type, v.hash.encode('hex'))
             elif isinstance(v, format.Txn):
