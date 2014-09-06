@@ -302,7 +302,7 @@ class Database(database.Database):
         return hashes
 
 
-    def locate_blocks(locator, count = 500, hash_stop = None):
+    def locate_blocks(self, locator, count = 500, hash_stop = None):
 
         # Find the first block that matches
         block = None
