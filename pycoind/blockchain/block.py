@@ -343,8 +343,8 @@ class Database(database.Database):
 
             # row is currently the top (ie. -1); otherwise use the below search
             if name != -1:
+                name += Block(self, row).height + 1
                 row = None
-                name += highest.height + 1
 
         # find the block
         if name >= 0 and row is None:
