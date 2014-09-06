@@ -44,7 +44,7 @@ class Database(object):
     def __init__(self, data_dir = None, coin = coins.Bitcoin):
 
         if data_dir is None:
-            data_dir = util.default_data_dir()
+            data_dir = util.default_data_directory()
         self.__data_dir = data_dir
         self.__coin = coin
 

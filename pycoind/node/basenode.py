@@ -67,7 +67,7 @@ class BaseNode(asyncore.dispatcher, object):
         asyncore.dispatcher.__init__(self, map = self)
 
         if data_dir is None:
-            data_dir = util.default_data_dir()
+            data_dir = util.default_data_directory()
 
         self._data_dir = data_dir
 

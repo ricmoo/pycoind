@@ -60,7 +60,7 @@ if __name__ == '__main__':
     # get the data directory, and create it if doesn't exist
     data_dir = args.data_dir
     if data_dir is None:
-        data_dir = pycoind.util.default_data_dir()
+        data_dir = pycoind.util.default_data_directory()
 
     if not os.path.isdir(data_dir):
         if args.no_init:
