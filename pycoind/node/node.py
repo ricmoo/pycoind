@@ -96,7 +96,7 @@ class Node(BaseNode):
                                           timestamp, bits, nonce, 0)
             block = self._blocks.get(header.hash)
             if not block:
-                raise blockchain.InvalidBlockException('block header not found')
+                raise blockchain.block.InvalidBlockException('block header not found')
 
             # add the transactions
             self._txns.add(block, txns)
@@ -109,7 +109,7 @@ class Node(BaseNode):
             if block.hash in self._incomplete_blocks:
                 del self._incomplete_blocks[block.hash]
 
-        except blockchain.InvalidBlockException, e:
+        except blockchain.block.InvalidBlockException, e:
             self.punish_peer(peer, str(e))
 
         # give the peer more room to request blocks
@@ -184,7 +184,7 @@ class Node(BaseNode):
                 added = self._blocks.add_header(header)
                 if added:
                     new_headers = True
-            except blockchain.InvalidBlockException, e:
+            except blockchain.block.InvalidBlockException, e:
                 self.punish_peer(peer, str(e))
 
 
