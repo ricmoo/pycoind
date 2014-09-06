@@ -341,12 +341,6 @@ class Alert(Message):
         'status_bar', 'reserved'
     ]
 
-    def __init__(self, *args, **kw):
-        Message.__init__(self, *args, **kw)
-
-        # We use this to cache the extracted info
-        self._data = dict()
-
     # Alert is a special... The binary packed format contains additional info
     # See: https://en.bitcoin.it/wiki/Protocol_specification#alert
     version = property(lambda s: s._parse_and_get('version'))
@@ -365,6 +359,10 @@ class Alert(Message):
 
     # The above properties will use this method to extract and cache everything
     def _parse_and_get(self, name):
+
+        if not hasattr(self, '_data'):
+            self._data = dict()
+
         if not self._data:
             data = self.payload
 
