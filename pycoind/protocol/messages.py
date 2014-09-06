@@ -36,6 +36,32 @@ __all__ = ['MessageFormatException', 'Message', 'UnknownMessageException',
            'Ping', 'Pong', 'Reject', 'Transaction', 'Version', 'VersionAck']
 
 
+def _debug(obj, params):
+    message = ['<%s' % obj.__class__.__name__]
+    for (k, v) in params:
+        if isinstance(v, (list, tuple)):
+            message.append(('len(%s)=%d' % (k, len(v))))
+            if len(v):
+                k = '%s[0]' % k
+                v = v[0]
+
+        if v:
+            if isinstance(v, format.NetworkAddress):
+                text = '%s:%d' % (v.address, v.port)
+            elif isinstance(v, format.InventoryVector):
+                obj_type = 'unknown'
+                if v.object_type < 2:
+                    obj_type = ['error', 'tx', 'block'][v.object_type]
+                text = '%s:%s' % (obj_type, v.hash.encode('hex'))
+            elif isinstance(v, format.Txn):
+                text = v.hash.encode('hex')
+            else:
+                text = str(v)
+            message.append(('%s=%s' % (k, text)))
+
+    return " ".join(message) + '>'
+
+
 # Raised if the message command is not registered
 class UnknownMessageException(Exception): pass
 
@@ -131,6 +157,7 @@ class Message(format.CompoundType):
 
         return message
 
+
     @property
     def name(self):
         '''Should be overridden in sub-classes whose name differs from its
@@ -139,6 +166,10 @@ class Message(format.CompoundType):
         The name determines which command_* will be called on a node.'''
 
         return self.command
+
+
+    def _debug(self):
+         return _debug(self, [])
 
 
 class Version(Message):
@@ -156,6 +187,13 @@ class Version(Message):
         ('relay', format.FormatTypeOptional(format.FormatTypeNumber('B'), True)),
     ]
 
+    def _debug(self):
+        return _debug(self,[
+            ('v', self.version),
+            ('s', self.services),
+            ('ua', self.user_agent),
+            ('sh', self.start_height),
+        ])
 
 class VersionAck(Message):
     command = 'verack'
@@ -170,6 +208,10 @@ class Address(Message):
         ('addr_list', format.FormatTypeArray(format.FormatTypeNetworkAddress(), max_length = 1000)),
     ]
 
+    def _debug(self):
+        return _debug(self, [('a', self.addr_list)])
+
+
 
 class Inventory(Message):
     command = 'inv'
@@ -178,6 +220,9 @@ class Inventory(Message):
     properties = [
         ('inventory', format.FormatTypeArray(format.FormatTypeInventoryVector(), max_length = 50000)),
     ]
+
+    def _debug(self):
+        return _debug(self, [('i', self.inventory)])
 
 
 class GetData(Inventory):
@@ -200,6 +245,9 @@ class GetBlocks(Message):
         ('hash_stop', format.FormatTypeBytes(32)),
     ]
 
+    def _debug(self):
+        return _debug(self, [('blh', [h.encode('hex') for h in self.block_locator_hashes])])
+
 
 class GetHeaders(GetBlocks):
     command = "getheaders"
@@ -217,6 +265,8 @@ class Transaction(Message):
         ('lock_time', format.FormatTypeNumber('I')),
     ]
 
+    def _debug(self):
+        return _debug(self, [('in', self.tx_in), ('out', self.tx_out)])
 
 class Block(Message):
     command = "block"
@@ -237,12 +287,24 @@ class Block(Message):
                      block.merkle_root, block.timestamp, block.bits,
                      block.nonce, block.transactions)
 
+    def _debug(self):
+        block_hash = util.get_block_header(self.version,
+                                           self.prev_block,
+                                           self.merkle_root,
+                                           self.timestamp,
+                                           self.bits,
+                                           self.nonce)
+        return _debug(self, [('h', block_hash.encode('hex')), ('t', self.txns)])
+
 class Headers(Message):
     command = "headers"
 
     properties = [
       ('headers', format.FormatTypeArray(format.FormatTypeBlockHeader())),
     ]
+
+    def _debug(self):
+        return _debug(self, [('h', self.headers)])
 
 
 class GetAddress(VersionAck):
@@ -262,6 +324,9 @@ class Ping(Message):
       ('nonce', format.FormatTypeBytes(8)),
     ]
 
+    def _debug(self):
+        return _debug(self, [('n', self.nonce.encode('hex'))])
+
 
 class Pong(Ping):
     command = "pong"
@@ -275,6 +340,9 @@ class Reject(Message):
       ('ccode', format.FormatTypeNumber('B')),
       ('reason', format.FormatTypeVarString()),
     ]
+
+    def _debug(self):
+        return _debug(self, [('m', self.message), ('r', self.reason)])
 
 class FilterLoad(Message):
     command = "filterload"
@@ -425,3 +493,5 @@ class Alert(Message):
         return '<message.Alert version=%d relay_until=%d expiration=%d id=%d cancel=%d cancel_set=[%s] min_ver=%d maxver=%d set_sub_ver=[%s] priority=%s comment=%r status_bar=%r reserverd=%r>' % (self.version, self.relay_until, self.expiration, self.id, self.cancel, ", ".join(str(i) for i in self.set_cancel), self.min_ver, self.max_ver, ", ".join(self.set_sub_ver), self.priority, self.comment, self.status_bar, self.reserved)
 
 
+    def _debug(self):
+        return _debug(self, [('s', self.status_bar)])

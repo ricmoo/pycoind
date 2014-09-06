@@ -141,7 +141,7 @@ if __name__ == '__main__':
     )
 
     if args.debug:
-        node.log_level = node.LOG_LEVEL_PROTOCOL
+        node.log_level = node.LOG_LEVEL_DEBUG
 
     for address in connect:
         node.add_peer(address)

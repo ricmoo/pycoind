@@ -248,6 +248,7 @@ class Connection(asyncore.dispatcher):
 
     def handle_message(self, message):
         self.node.log('<<< ' + str(message), peer = self, level = self.node.LOG_LEVEL_PROTOCOL)
+        self.node.log('<<< ' + message._debug(), peer = self, level = self.node.LOG_LEVEL_DEBUG)
 
         kwargs = dict((k, getattr(message, k)) for (k, t) in message.properties)
 
@@ -283,6 +284,7 @@ class Connection(asyncore.dispatcher):
     def send_message(self, message):
         msg = str(message)
         self.node.log('>>> ' + str(message), peer = self, level = self.node.LOG_LEVEL_PROTOCOL)
+        self.node.log('>>> ' + message._debug(), peer = self, level = self.node.LOG_LEVEL_DEBUG)
 
         self._send_buffer += message.binary(self.node.coin.magic)
 

@@ -183,7 +183,11 @@ class BaseNode(asyncore.dispatcher, object):
         else:
             source = 'node'
         message = '(%s) %s' % (source, message)
-        print >>self._log, message[:100]
+
+        #if message.find('Traceback') == -1:
+        #    message = message[:100]
+
+        print >>self._log, message
 
     # Relaying
     # @TODO: not implemented yet and won't be made available until
