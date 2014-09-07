@@ -68,7 +68,7 @@ class ___coin(coin.Coin):
     # non-printable string, and not symetric.
     # @TODO: create a utility function to generate safe-ish magic numbers
     # Usually in main.cpp
-    magic = "\x__\x__\x__\x__"
+    magic = "\x00\x00\x00\x00"
 
     # This value will determine what character your addresses begin with
     # @TODO: create utility function to compute this based on prefix
