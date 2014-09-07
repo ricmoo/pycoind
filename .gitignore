@@ -1,1 +1,8 @@
 *.pyc
+.DS_Store
+.hg/*
+.hgignore
+MANIFEST
+build/*
+dist/*
+obsolete/*
