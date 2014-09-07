@@ -368,7 +368,7 @@ class Database(database.Database):
     def incomplete_blocks(self, from_block = None, max_count = 1000):
         cursor = self._cursor()
 
-        sql = ' where txn_count = 0 and mainchain = 1'
+        sql = ' where txn_count = 0 and mainchain = 1 and height >= 0'
         if from_block:
             sql += (' and id > %d' % from_block._blockid)
 
@@ -384,7 +384,7 @@ class Database(database.Database):
 
     def incomplete_block_count(self):
         cursor = self._cursor()
-        cursor.execute('select count(*) from blocks where txn_count = 0 and mainchain = 1')
+        cursor.execute('select count(*) from blocks where txn_count = 0 and mainchain = 1 and height >= 0')
         return cursor.fetchone()[0]
 
 
@@ -406,10 +406,7 @@ class Database(database.Database):
 
     def __iter__(self):
         cursor = self._cursor()
-        cursor.execute(self.sql_select + ' where mainchain = 1 order by height asc')
-
-        # skip the pre-genesis block
-        cursor.fetchone()
+        cursor.execute(self.sql_select + ' where mainchain = 1 and height >= 0 order by height asc')
 
         while True:
             rows = cursor.fetchmany()
