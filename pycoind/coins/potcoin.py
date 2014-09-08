@@ -52,4 +52,4 @@ class Potcoin(Litecoin):
 
     alert_public_key = ''.decode('hex')
 
-
+    block_height_guess = []

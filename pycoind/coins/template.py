@@ -80,3 +80,4 @@ class ___coin(coin.Coin):
     alert_public_key = '___'.decode('hex')
 
 
+    block_height_guess = []

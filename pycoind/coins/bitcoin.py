@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+from .. import util
 
 import coin
 
@@ -68,6 +69,13 @@ class Bitcoin(coin.Coin):
     ext_secret_key = "".join(chr(i) for i in (0x04, 0x35, 0x83, 0x94))
 
     script_address = chr(5)
+
+    block_height_guess = [
+        ('blockchain.info', util.fetch_url_json_path_int('https://blockchain.info/latestblock', 'height')),
+        ('blockexplorer.com', util.fetch_url_int('https://blockexplorer.com/q/getblockcount')),
+        ('blockr.io', util.fetch_url_json_path_int('http://btc.blockr.io/api/v1/coin/info', 'data/last_block/nb')),
+        ('chain.so', util.fetch_url_json_path_int('https://chain.so/api/v2/get_info/BTC', 'data/blocks')),
+    ]
 
 
 #class BitcoinTestnet(Bitcoin):

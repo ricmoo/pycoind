@@ -73,6 +73,7 @@ class Novacoin(Litecoin):
     # Usually in alert.cpp
     alert_public_key = '043fa441fd4203d03f5df2b75ea14e36f20d39f43e7a61aa7552ab9bcd7ecb0e77a3be4585b13fcdaa22ef6e51f1ff6f2929bec2494385b086fb86610e33193195'.decode('hex')
 
+    block_height_guess = []
 
 class NovacoinTest(Novacoin):
 

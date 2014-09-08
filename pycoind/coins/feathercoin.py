@@ -25,6 +25,8 @@ import coin
 
 from .litecoin import Litecoin
 
+from .. import util
+
 # https://github.com/FeatherCoin/Feathercoin
 
 __all__ = ['Feathercoin']
@@ -65,3 +67,6 @@ class Feathercoin(Litecoin):
 
     addrss_version = chr(14)
 
+    block_height_guess = [
+        ('explorer.feathercoin.com', util.fetch_url_int('http://explorer.feathercoin.com/chain/Feathercoin/q/getblockcount')),
+    ]

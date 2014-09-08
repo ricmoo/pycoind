@@ -25,6 +25,8 @@ import coin
 
 from .litecoin import Litecoin
 
+from .. import util
+
 # https://github.com/dogecoin/dogecoin
 
 __all__ = ['Dogecoin']
@@ -55,3 +57,8 @@ class Dogecoin(Litecoin):
     magic = '\xc0\xc0\xc0\xc0'
 
     address_version = chr(30)
+
+    block_height_guess = [
+        ('chain.so', util.fetch_url_json_path_int('https://chain.so/api/v2/get_info/DOGE', 'data/blocks')),
+    ]
+

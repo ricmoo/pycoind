@@ -22,9 +22,13 @@
 
 
 import hashlib
+import json
 import math
 import os
 import struct
+import time
+import threading
+import urllib2
 
 from . import base58
 from . import bootstrap
@@ -142,4 +146,69 @@ def default_data_directory():
 #    print img
 #    return 'foo'
 
+
+def fetch_url_json_path_int(url, path):
+
+    def func():
+        request = urllib2.Request(url, headers = {'User-Agent': 'pycoind'})
+        payload = urllib2.urlopen(request).read()
+
+        try:
+            data = json.loads(payload)
+            for component in path.split('/'):
+                if isinstance(data, dict):
+                    data = data[component]
+                elif ininstance(data, (list, tuple)):
+                    data = data[int(component)]
+                else:
+                    return None
+            return int(data)
+        except Exception, e:
+            print e
+
+        return None
+
+    return func
+
+def fetch_url_int(url):
+    def func():
+        request = urllib2.Request(url, headers = {'User-Agent': 'pycoind'})
+        try:
+            return int(urllib2.urlopen(request).read())
+        except Exception, e:
+            print e
+
+        return None
+
+    return func
+
+def guess_block_height(coin, timeout = 5.0):
+    result = dict()
+    lock = threading.Lock()
+    #user_agent = 'pycoind/%s' % '.'.join(str(v) for v in VERSION)
+
+    def get_block_height(name, func):
+        try:
+            block_height = func()
+            with lock:
+                result[name] = block_height
+        except Exception, e:
+            print e
+
+    threads = []
+    for (name, func) in coin.block_height_guess:
+        thread = threading.Thread(target = get_block_height, args = (name, func))
+        thread.daemon = True
+        thread.start()
+        threads.append(thread)
+
+    t0 = time.time()
+    for thread in threads:
+        wait_time = timeout - (time.time() - t0)
+        if timeout < 0: break
+        thread.join(wait_time)
+
+    # we copy, so lingering threads don't sneak new info in without a lock
+    with lock:
+        return result.copy()
 

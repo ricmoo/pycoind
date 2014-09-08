@@ -23,7 +23,7 @@
 
 import coin
 
-from ..util import scrypt
+from .. import util
 
 __all__ = ['Litecoin']
 
@@ -38,7 +38,7 @@ class Litecoin(coin.Coin):
     @staticmethod
     def proof_of_work(block_header):
         block_header = block_header[:80]
-        return scrypt(block_header, block_header, 1024, 1, 1, 32)
+        return util.scrypt(block_header, block_header, 1024, 1, 1, 32)
 
     symbols = [ 'LTC' ]
     symbol = symbols[0]
@@ -67,6 +67,11 @@ class Litecoin(coin.Coin):
 
     alert_public_key = '040184710fa689ad5023690c80f3a49c8f13f8d45b8c857fbcbc8bc4a8e4d3eb4b10f4d4604fa08dce601aaf0f470216fe1b51850b4acf21b179c45070ac7b03a9'.decode('hex')
     address_version = chr(48)
+
+    block_height_guess = [
+        ('chain.so', util.fetch_url_json_path_int('https://chain.so/api/v2/get_info/LTC', 'data/blocks')),
+        ('blockr.io', util.fetch_url_json_path_int('http://ltc.blockr.io/api/v1/coin/info', 'data/last_block/nb')),
+    ]
 
 class LitecoinTestnet(Litecoin):
 

@@ -3,7 +3,7 @@
 import os
 
 import sys
-sys.path.append(os.path.join(os.path.split(__file__)[0], '..'))
+sys.path.insert(0, os.path.join(os.path.split(__file__)[0], '..'))
 
 import argparse
 import json
@@ -34,6 +34,7 @@ if __name__ == '__main__':
 
     group = parser.add_argument_group(title = "Block Explorer")
     only_one = group.add_mutually_exclusive_group()
+    only_one.add_argument('--status', action = "store_true", help = "dump blockchain sync status")
     only_one.add_argument('--block', metavar = "BLOCK_HASH", help = "dump a block by its block hash")
     only_one.add_argument('--height', type = int, help = "dump a block by its height")
     only_one.add_argument('--txid', help = "dump a transaction by its txid")
@@ -231,6 +232,31 @@ if __name__ == '__main__':
                         ]
                         dump_info(info, '    ')
                         print
+
+    elif args.status:
+        database = pycoind.blockchain.block.Database(data_dir = data_dir, coin = coin)
+
+        height = database[-1].height
+
+        info = []
+        info.append(('block header height', height))
+
+        # guess the height from external sources if possible (use majority)
+        guesses = pycoind.util.guess_block_height(coin, 5.0)
+        values = guesses.values()
+        tally = sorted([(values.count(v), v) for v in set(values)])
+        if tally:
+            info.append(('guessed height', tally[-1][1]))
+
+            percent = float(height) / tally[-1][1]
+            if args.json:
+                info.append(('block header complete', percent))
+            else:
+                info.append(('block header complete', "%d%%" % (100 * percent)))
+
+        info.append(('incomplete blocks', database.incomplete_block_count()))
+
+        dump_info(info)
 
     #elif args.export or args.export_all:
     #    blockchain = pycoind.BlockChain(data_dir = data_dir)

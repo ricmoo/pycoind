@@ -62,6 +62,12 @@ class Coin(object):
 
     checkpoint_public_key = None
 
+    # Callables that can be used to guess the current block height. This data
+    # should not be trusted blindly, but is useful for approximating the
+    # completeness of a blockchain sync.
+    # Each entry should be a (name, callable) tuple
+    block_height_guess = []
+
     def __hash__(self):
         return hash(self.symbol)
 
