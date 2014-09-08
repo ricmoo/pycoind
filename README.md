@@ -24,7 +24,8 @@ Currently Supported Coins
 * dogecoin
 * feathercoin
 * litecoin
-
+* potcoin
+* zetacoin
 
 To Do (coming soon...)
 ----------------------
@@ -723,6 +724,8 @@ Analyze the blockchain
 ----------------------
 
 There are so many things possible, but for example, let's say you wish to figure out what percentage of all outputs ever generated, are currently unspent.
+
+**This is old and wrong... I will update this to use the new API soon.**
 
 ```python
 import pycoind
