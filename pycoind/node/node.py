@@ -64,6 +64,9 @@ class Node(BaseNode):
         # how many in-flight block requests per peer
         self._inflight_blocks = dict()
 
+        # last time headers were requested from a peer
+        self._inflight_headers = dict()
+
 
     @property
     def blockchain_height(self):
@@ -110,7 +113,7 @@ class Node(BaseNode):
                 del self._incomplete_blocks[block.hash]
 
         except blockchain.block.InvalidBlockException, e:
-            self.log('invalid block header: %s (%s)' % (header.hash.encode('hex'), e.message), self.LOG_LEVEL_DEBUG)
+            self.log('invalid block header: %s (%s)' % (header.hash.encode('hex'), e.message), level = self.LOG_LEVEL_DEBUG)
             self.punish_peer(peer, str(e))
 
         # give the peer more room to request blocks
@@ -176,6 +179,12 @@ class Node(BaseNode):
 
 
     def command_headers(self, peer, headers):
+
+        # no longer a get_header in-flight for this peer
+        if peer in self._inflight_headers:
+            del self._inflight_headers[peer]
+
+        # nothing to do
         if len(headers) == 0: return
 
         # Add the headers to the database (we fill in the transactions later)
@@ -186,9 +195,9 @@ class Node(BaseNode):
                 if added:
                     new_headers = True
                 else:
-                    self.log('block header already exists: %s' % header.hash.encode('hex'), self.LOG_LEVEL_DEBUG)
+                    self.log('block header already exists: %s' % header.hash.encode('hex'), level = self.LOG_LEVEL_DEBUG)
             except blockchain.block.InvalidBlockException, e:
-                self.log('invalid block header: %s (%s)' % (header.hash.encode('hex'), e.message), self.LOG_LEVEL_DEBUG)
+                self.log('invalid block header: %s (%s)' % (header.hash.encode('hex'), e.message), level = self.LOG_LEVEL_DEBUG)
                 self.punish_peer(peer, str(e))
 
 
@@ -264,10 +273,18 @@ class Node(BaseNode):
             return
         self._last_get_headers = time.time()
 
+        # after 15 minutes, let's assume they forgot (but with a slap on the wrist)
+        now = time.time()
+        for peer in list(self._inflight_headers):
+            if now - self._inflight_headers[peer] > 900:
+                del self._inflight_headers[peer]
+                self.punish_peer(peer, 'no response for get_headers')
+
         # pick a peer that's ready
-        peers = [p for p in self.peers if p.verack]
+        peers = [p for p in self.peers if (p.verack and p not in self._inflight_headers)]
         if not peers: return
         peer = random.choice(peers)
+        self._inflight_headers[peer] = now
 
         # request the next block headers (if any)
         locator = self._blocks.block_locator_hashes()
@@ -299,10 +316,10 @@ class Node(BaseNode):
                 if inflight >= self.MAX_INCOMPLETE_INFLIGHT:
                     continue
 
-                # find some not-recently-requested blocks (over 5 minutes ago)
+                # find some not-recently-requested blocks (over 15 minutes ago)
                 getdata = []
                 for hash in self._incomplete_blocks:
-                    if now - self._incomplete_blocks[hash] < 300:
+                    if now - self._incomplete_blocks[hash] < 900:
                         continue
                     self._incomplete_blocks[hash] = now
 
