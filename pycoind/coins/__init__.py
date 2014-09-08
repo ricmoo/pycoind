@@ -26,6 +26,8 @@ from coinyecoin import Coinyecoin
 from dogecoin import Dogecoin
 from feathercoin import Feathercoin
 from litecoin import Litecoin
+from potcoin import Potcoin
+from zetacoin import Zetacoin
 
 from coin import satoshi_per_coin
 
@@ -41,6 +43,8 @@ Coins = [
     Dogecoin,
     Feathercoin,
     Litecoin,
+    Potcoin,
+    Zetacoin,
 ]
 
 

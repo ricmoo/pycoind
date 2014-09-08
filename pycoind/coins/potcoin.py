@@ -25,6 +25,8 @@ import coin
 
 from .litecoin import Litecoin
 
+from .. import util
+
 class Potcoin(Litecoin):
 
     name = "potcoin"
@@ -48,8 +50,12 @@ class Potcoin(Litecoin):
 
     magic = "\xfb\xc0\xb6\xdb"
 
-    address_version = chr()
+    address_version = chr(55)
+    script_address = chr(5)
 
-    alert_public_key = ''.decode('hex')
+    alert_public_key = '040184710fa689ad5023690c80f3a49c8f13f8d45b8c857fbcbc8bc4a8e4d3eb4b10f4d4604fa08dce601aaf0f470216fe1b51850b4acf21b179c45070ac7b03a9'.decode('hex')
 
-    block_height_guess = []
+    block_height_guess = [
+        ('potchain.aprikos.net', util.fetch_url_int('http://potchain.aprikos.net/chain/Potcoin/q/getblockcount')),
+        ('chainz.cryptoid.info', util.fetch_url_int('http://chainz.cryptoid.info/pot/api.dws?q=getblockcount')),
+    ]
