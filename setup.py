@@ -82,7 +82,7 @@ setup(name = 'pycoind',
       long_description = LONG_DESCRIPTION,
       author = 'Richard Moore',
       author_email = 'ricmoo@pycoind.org',
-      url = 'https://github.com/ricmoo/pycoind',
+      url = 'http://www.pycoind.org',
       packages = [
           'pycoind',
           'pycoind.blockchain',
