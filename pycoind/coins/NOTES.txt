@@ -1,0 +1,39 @@
+Coins
+=====
+
+New coins are coming out all the time, and I would like to support as many as
+possible, but there are so many little differences, and testing is required
+and all that jazz. So here are a few of the upcoming candidates, and what
+features make them special that I must still investigate to support them.
+
+1. Namecoin - highest on my list (AuxPoW)
+2. Novacoin (PoS)
+3. Mooncoin (website is down?)
+4. Kittehcoin (soon AuxPoW)
+
+Other coins I know of, that would be nice, but I really know very little about,
+such as whether they are even based on bitcoind, which is really all pycoind
+can support at this time.
+
+Darkcoin
+Leafcoin
+Tacocoin (I can't even find a working block explorer)
+Peercoin
+Flappycoin
+Vericoin (PoS)
+Bitcoin Dark (is it just a fancy wallet something-something?)
+
+Terms
+-----
+
+AuxPoW - Auxillary Proof-of-Work
+    Basically allows one coin to benefit from the success of another coin
+    and strengthen its own network.
+
+    This is high on my priority list, as I want to support Namecoin
+
+PoS - Proof-of-Stake
+    Some sort of way to ensure those with the most to lose are the ones with
+    the most power. I know very little about the technical side at this point.
+
+    I don't know how this affects the underlying protocol yet...

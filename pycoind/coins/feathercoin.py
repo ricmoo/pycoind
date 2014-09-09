@@ -63,7 +63,7 @@ class Feathercoin(Litecoin):
     genesis_bits = 504365040
     genesis_nonce = 2084524493
 
-    magic = '\xda\xaf\xa5\xba'
+    magic = '\xfb\xc0\xb6\xdb'
 
     addrss_version = chr(14)
 

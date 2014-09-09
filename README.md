@@ -20,10 +20,12 @@ Currently Supported Coins
 -------------------------
 
 * bitcoin
-* coinyecoin (although feels kinda dead)
+* coinyecoin (dead?)
 * dogecoin
 * feathercoin
+* flappycoin
 * litecoin
+* mooncoin (dead?)
 * potcoin
 * zetacoin
 
