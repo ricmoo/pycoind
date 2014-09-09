@@ -42,6 +42,9 @@ class Node(BaseNode):
     # maximum query limit for incomplete blocks
     MAX_INCOMPLETE_FETCH = 10000
 
+    # maximum number of entries in the memory pool
+    MEMORY_POOL_SIZE = 30000
+
     def __init__(self, data_dir = None, address = None, seek_peers = 16, max_peers = 125, bootstrap = True, log = sys.stdout, coin = coins.Bitcoin):
         BaseNode.__init__(self, data_dir, address, seek_peers, max_peers, bootstrap, log, coin)
 
@@ -78,9 +81,9 @@ class Node(BaseNode):
         pass
 
     def _add_mempool(self, txn):
-        if len(self._mempool) > 30000:
+        if len(self._mempool) >= self.MEMORY_POOL_SIZE:
             self._mempool[self._mempool_index] = txn
-            self._mempool_index = (self._mempool_index + 1) % 30000
+            self._mempool_index = (self._mempool_index + 1) % self.MEMORY_POOL_SIZE
         else:
             self._mempool.append(txn)
 
