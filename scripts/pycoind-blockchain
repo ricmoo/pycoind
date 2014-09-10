@@ -242,10 +242,11 @@ if __name__ == '__main__':
         info.append(('block header height', height))
 
         # guess the height from external sources if possible (use majority)
-        guesses = pycoind.util.guess_block_height(coin, 5.0)
+        guesses = pycoind.util.guess_block_height(coin, 10.0)
         values = guesses.values()
-        tally = sorted([(values.count(v), v) for v in set(values)])
+        tally = sorted([(values.count(v), v) for v in set(values) if v is not None])
         if tally:
+            #print guesses, tally
             info.append(('guessed height', tally[-1][1]))
 
             percent = float(height) / tally[-1][1]
