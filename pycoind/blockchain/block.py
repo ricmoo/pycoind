@@ -194,7 +194,10 @@ class Database(database.Database):
         existing = self.get(block_hash, orphans = True)
         if existing:
             return False
-            #return existing
+
+        # @TODO: Calculate the expected target and make sure the block matches
+
+        # @TODO: Calculate the valid time range and make sure the block matches
 
         # verify the block hits the target
         if not util.verify_target(self.coin, header):
@@ -243,7 +246,6 @@ class Database(database.Database):
         self._connection.commit()
 
         return True
-        #return Block(self, (lastrowid, ) + row)
 
 
     def _get(self, blockid):
