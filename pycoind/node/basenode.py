@@ -335,7 +335,7 @@ class BaseNode(asyncore.dispatcher, object):
             if len(address) >= 1000: break
 
         # Send the remote peer our list of addresses
-        peer.send_message(message.Address(addresses))
+        peer.send_message(protocol.Address(addresses))
 
 
     def command_get_blocks(self, peer, version, block_locator_hashes, hash_stop):
